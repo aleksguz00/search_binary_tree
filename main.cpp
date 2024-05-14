@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <initializer_list>
 
 template<class Value>
 class BinaryTree;
@@ -9,8 +10,22 @@ class TreeNode {
 public:
     TreeNode() = delete;
     explicit TreeNode(Value value) : value_{ value }, left_{ nullptr }, right_{ nullptr } {}
-    explicit TreeNode(TreeNode<Value> node) :
-                value_{ node.value_ }, left_{ node.left_ }, right_{ node.right_ } {}
+
+    TreeNode(const TreeNode<Value>& node) : 
+            value_{ node.value_ }, left_{ nullptr }, right_{ nullptr } {
+                if (node.left_) {
+                    left_ = std::make_unique<TreeNode<Value>>(*node.left_);
+                }
+
+                if (node.right_) {
+                    right_ = std::make_unique<TreeNode<Value>>(*node.right_);
+                }
+            }
+
+    TreeNode(TreeNode<Value>&& node) noexcept :
+            value_{ std::move(node.value_ ) }, 
+            left_{ std::move(node.left_) },
+            right_{ std::move(node.right_) } {}
 
 private:
     Value value_;
@@ -24,12 +39,29 @@ template<class Value>
 class BinaryTree {
 public:
     BinaryTree() = default;
-    explicit BinaryTree(Node<Value> node) : root{ node } {}
+    explicit BinaryTree(TreeNode<Value> node) : root_{ node } {}
+    explicit BinaryTree(std::initializer_list<Value> values) {}
+    explicit BinaryTree(std::initializer_list<TreeNode<Value>> nodes) {}
+    
+    void Insert(TreeNode<Value> node) {
+        if (root_ == nullptr) {
+            root_ = std::make_unique<TreeNode<Value>>(node);
+            ++size_;
+            return;
+        }
+
+
+    }
 
 private:
-    TreeNode<Value> root;
+    std::unique_ptr<TreeNode<Value>> root_;
+    size_t size_ = 0;
+
+
 };
 
 int main() {
-
+    TreeNode<int> node{ 5 };
+    BinaryTree<int> tree;
+    tree.Insert(node);
 }
