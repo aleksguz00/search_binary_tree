@@ -16,11 +16,11 @@ public:
     Node(const Node& other) : 
         data_{ other.data_ }, left_{ nullptr }, right_{ nullptr } {
             if (other.left_) { 
-                left_ = other.left_.release();
+                left_ = other.left_;
             }
 
             if (other.right_) {
-                right_ = other.left_.release();
+                right_ = other.right_;
             }
         }
 
@@ -31,8 +31,8 @@ public:
 
 private:
     Value data_;
-    std::unique_ptr<Node<Value>> left_;
-    std::unique_ptr<Node<Value>> right_;
+    std::shared_ptr<Node<Value>> left_;
+    std::shared_ptr<Node<Value>> right_;
 
     friend BinaryTree<Value>;
 };
@@ -52,6 +52,10 @@ public:
         InsertNode_(root_, data);
     }
 
+    void Delete(Value data) {
+        DeleteNode_(root_, data);
+    }
+
     void Print() const {
         PrintTree_(root_);
         std::cout << '\n';
@@ -61,15 +65,23 @@ public:
         return Search_(root_, data);
     }
 
+    Value Min() const {
+        return GetMin_(root_)->data_;
+    }
+
+    Value Max() const {
+        return GetMax_(root_)->data_;
+    }
+
 private:
-    std::unique_ptr<Node<Value>> root_;
+    std::shared_ptr<Node<Value>> root_;
 
     void InsertNode_(
-        std::unique_ptr<Node<Value>>& node,
+        std::shared_ptr<Node<Value>>& node,
         Value data
     ) {
         if (!node) {
-            node = std::make_unique<Node<Value>>(data);
+            node = std::make_shared<Node<Value>>(data);
             return;
         }
 
@@ -81,7 +93,28 @@ private:
         }
     }
 
-    void PrintTree_(const std::unique_ptr<Node<Value>>& node) const {
+    std::shared_ptr<Node<Value>> DeleteNode_(
+        std::shared_ptr<Node<Value>>& node,
+        Value data
+    ) {
+        if (!node) return nullptr;
+        else if (data < node->data_) node->left_ = DeleteNode_(node->left_, data);
+        else if (data > node->data_) node->right_ = DeleteNode_(node->right_, data);
+        else {
+            if (!node->left_ || !node->right_) {
+                node = (!node->left_) ? node->right_ : node->left_;
+            }
+            else {
+                auto left_max = GetMax_(node->left_);
+                node->data_ = left_max->data_;
+                node->right_ = DeleteNode_(node->right_, left_max->data_);
+            }
+        }
+
+        return node;
+    }
+
+    void PrintTree_(const std::shared_ptr<Node<Value>>& node) const {
         if (node) {
             PrintTree_(node->left_);
             std::cout << node->data_ << " ";
@@ -89,11 +122,27 @@ private:
         }
     }
 
-    bool Search_(const std::unique_ptr<Node<Value>>& node, Value data) const {
+    bool Search_(const std::shared_ptr<Node<Value>>& node, Value data) const {
         if (!node) return false;
         if (node->data_ == data) return true;
 
         return (data < node->data_) ? Search_(node->left_, data) : Search_(node->right_, data);
+    }
+
+    std::shared_ptr<Node<Value>> GetMin_(const std::shared_ptr<Node<Value>>& node) const {
+        if (!node) throw std::out_of_range("Tree is empty");
+
+        if (!node->left_) return node;
+
+        return GetMin_(node->left_);
+    }
+
+    std::shared_ptr<Node<Value>> GetMax_(const std::shared_ptr<Node<Value>>& node) const {
+        if (!node) throw std::out_of_range("Tree is empty");
+
+        if (!node->right_) return node;
+
+        return GetMax_(node->right_);
     }
 };
 
@@ -104,8 +153,14 @@ int main() {
     tree.Insert(7);
     tree.Insert(1);
     tree.Insert(777);
+    tree.Insert(9912);
+    tree.Insert(-50);
 
     tree.Print();
 
-    std::cout << tree.Search(10) << '\n';
+    tree.Delete(777);
+
+    tree.Print();
+
+    std::cout << tree.Min() << '\n';
 }
