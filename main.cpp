@@ -57,6 +57,10 @@ public:
         std::cout << '\n';
     }
 
+    bool Search(Value data) const {
+        return Search_(root_, data);
+    }
+
 private:
     std::unique_ptr<Node<Value>> root_;
 
@@ -84,6 +88,13 @@ private:
             PrintTree_(node->right_);
         }
     }
+
+    bool Search_(const std::unique_ptr<Node<Value>>& node, Value data) const {
+        if (!node) return false;
+        if (node->data_ == data) return true;
+
+        return (data < node->data_) ? Search_(node->left_, data) : Search_(node->right_, data);
+    }
 };
 
 int main() {
@@ -95,4 +106,6 @@ int main() {
     tree.Insert(777);
 
     tree.Print();
+
+    std::cout << tree.Search(10) << '\n';
 }
